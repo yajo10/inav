@@ -32,6 +32,16 @@ Throttle signal will be held to a fixed value when throttle is centered with an 
 
 ---
 
+### 3d_direction_via_reversible_motor_mode
+
+Use REVERSIBLE_MOTOR_MODE and not the deadband for the direction of the motor
+
+| Default | Min | Max |
+| --- | --- | --- |
+| OFF |  |  |
+
+---
+
 ### 3d_neutral
 
 Neutral (stop) throttle value for 3D mode
