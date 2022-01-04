@@ -80,7 +80,8 @@ PG_REGISTER_WITH_RESET_TEMPLATE(reversibleMotorsConfig_t, reversibleMotorsConfig
 PG_RESET_TEMPLATE(reversibleMotorsConfig_t, reversibleMotorsConfig,
     .deadband_low = SETTING_3D_DEADBAND_LOW_DEFAULT,
     .deadband_high = SETTING_3D_DEADBAND_HIGH_DEFAULT,
-    .neutral = SETTING_3D_NEUTRAL_DEFAULT
+    .neutral = SETTING_3D_NEUTRAL_DEFAULT,
+    .direction_via_reversible_motor_mode = SETTING_3D_DIRECTION_VIA_REVERSIBLE_MOTOR_MODE
 );
 
 PG_REGISTER_WITH_RESET_TEMPLATE(mixerConfig_t, mixerConfig, PG_MIXER_CONFIG, 4);
@@ -220,7 +221,7 @@ void mixerInit(void)
 void mixerResetDisarmedMotors(void)
 {
 
-    if (feature(FEATURE_REVERSIBLE_MOTORS)) {
+    if (feature(FEATURE_REVERSIBLE_MOTORS) && !reversibleMotorsConfig()->direction_via_reversible_motor_mode) {
         motorZeroCommand = reversibleMotorsConfig()->neutral;
         throttleRangeMin = throttleDeadbandHigh;
         throttleRangeMax = motorConfig()->maxthrottle;
@@ -360,7 +361,7 @@ void FAST_CODE writeMotors(void)
                 if (reversibleMotorsThrottleState == MOTOR_DIRECTION_FORWARD) {
                     motorValue = handleOutputScaling(
                         motor[i],
-                        throttleRangeMin,
+                        reversibleMotorsConfig()->direction_via_reversible_motor_mode ? throttleIdleValue : throttleRangeMin,
                         DSHOT_DISARM_COMMAND,
                         throttleRangeMin,
                         throttleRangeMax,
@@ -371,7 +372,7 @@ void FAST_CODE writeMotors(void)
                 } else {
                     motorValue = handleOutputScaling(
                         motor[i],
-                        throttleRangeMax,
+                        reversibleMotorsConfig()->direction_via_reversible_motor_mode ? throttleIdleValue: throttleRangeMax,
                         DSHOT_DISARM_COMMAND,
                         throttleRangeMin,
                         throttleRangeMax,
@@ -444,7 +445,7 @@ void writeAllMotors(int16_t mc)
 
 void stopMotors(void)
 {
-    writeAllMotors(feature(FEATURE_REVERSIBLE_MOTORS) ? reversibleMotorsConfig()->neutral : motorConfig()->mincommand);
+    writeAllMotors(feature(FEATURE_REVERSIBLE_MOTORS) && !reversibleMotorsConfig()->direction_via_reversible_motor_mode ? reversibleMotorsConfig()->neutral : motorConfig()->mincommand);
 
     delay(50); // give the timers and ESCs a chance to react.
 }
@@ -519,8 +520,16 @@ void FAST_CODE mixTable()
     } else
 #endif
     if (feature(FEATURE_REVERSIBLE_MOTORS)) {
-
-        if (rcCommand[THROTTLE] >= (throttleDeadbandHigh) || STATE(SET_REVERSIBLE_MOTORS_FORWARD)) {
+        if(reversibleMotorsConfig()->direction_via_reversible_motor_mode) {
+            throttleRangeMax = motorConfig()->maxthrottle;
+            throttleRangeMin = throttleIdleValue;
+            if(!FLIGHT_MODE(REVERSE_MOTORS_MODE)) {
+                reversibleMotorsThrottleState = MOTOR_DIRECTION_FORWARD;
+            }else{
+                reversibleMotorsThrottleState = MOTOR_DIRECTION_BACKWARD;
+            }
+            motorValueWhenStopped = motorConfig()->mincommand;
+        }else if (rcCommand[THROTTLE] >= (throttleDeadbandHigh) || STATE(SET_REVERSIBLE_MOTORS_FORWARD)) {
             /*
              * Throttle is above deadband, FORWARD direction
              */
@@ -528,6 +537,7 @@ void FAST_CODE mixTable()
             throttleRangeMax = motorConfig()->maxthrottle;
             throttleRangeMin = throttleDeadbandHigh;
             DISABLE_STATE(SET_REVERSIBLE_MOTORS_FORWARD);
+            motorValueWhenStopped = getReversibleMotorsThrottleDeadband();
         } else if (rcCommand[THROTTLE] <= throttleDeadbandLow) {
             /*
              * Throttle is below deadband, BACKWARD direction
@@ -535,13 +545,13 @@ void FAST_CODE mixTable()
             reversibleMotorsThrottleState = MOTOR_DIRECTION_BACKWARD;
             throttleRangeMax = throttleDeadbandLow;
             throttleRangeMin = motorConfig()->mincommand;
+            motorValueWhenStopped = getReversibleMotorsThrottleDeadband();
         }
 
 
-        motorValueWhenStopped = getReversibleMotorsThrottleDeadband();
         mixerThrottleCommand = constrain(rcCommand[THROTTLE], throttleRangeMin, throttleRangeMax);
 
-        if(feature(FEATURE_REVERSIBLE_MOTORS) && reversibleMotorsThrottleState == MOTOR_DIRECTION_BACKWARD) {
+        if(feature(FEATURE_REVERSIBLE_MOTORS) && !reversibleMotorsConfig()->direction_via_reversible_motor_mode && reversibleMotorsThrottleState == MOTOR_DIRECTION_BACKWARD) {
             /*
              * We need to start the throttle output from stick input to start in the middle of the stick at the low and.
              * Without this, it's starting at the high side.
@@ -629,6 +639,7 @@ motorStatus_e getMotorStatus(void)
 
     const bool fixedWingOrAirmodeNotActive = STATE(FIXED_WING_LEGACY) || !STATE(AIRMODE_ACTIVE);
     const bool throttleStickLow =
+            //TODO: check this line (maybe changes needed)
         (calculateThrottleStatus(feature(FEATURE_REVERSIBLE_MOTORS) ? THROTTLE_STATUS_TYPE_COMMAND : THROTTLE_STATUS_TYPE_RC) == THROTTLE_LOW);
 
     if (throttleStickLow && fixedWingOrAirmodeNotActive) {

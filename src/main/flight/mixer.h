@@ -70,6 +70,7 @@ typedef struct reversibleMotorsConfig_s {
     uint16_t deadband_low;                // min 3d value
     uint16_t deadband_high;               // max 3d value
     uint16_t neutral;                     // center 3d value
+    bool direction_via_reversible_motor_mode; // use Reversible_motor_mode for getting the correct motor direction
 } reversibleMotorsConfig_t;
 
 PG_DECLARE(reversibleMotorsConfig_t, reversibleMotorsConfig);

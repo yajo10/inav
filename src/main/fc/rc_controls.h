@@ -18,7 +18,7 @@
 #pragma once
 
 #include "config/parameter_group.h"
-
+#include "flight/mixer.h"
 #define AIRMODE_THROTTLE_THRESHOLD 1300
 
 typedef enum rc_alias {

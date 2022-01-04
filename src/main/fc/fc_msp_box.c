@@ -94,6 +94,7 @@ static const box_t boxes[CHECKBOX_ITEM_COUNT + 1] = {
     { BOXAUTOLEVEL, "AUTO LEVEL", 54 },
     { BOXPLANWPMISSION, "WP PLANNER", 55 },
     { BOXSOARING, "SOARING", 56 },
+    { BOXREVERSEMOTOR, "REVERSE MOTORS", 57 },
     { CHECKBOX_ITEM_COUNT, NULL, 0xFF }
 };
 
@@ -328,6 +329,9 @@ void initActiveBoxIds(void)
     if(STATE(MULTIROTOR) && isMotorProtocolDshot())
         activeBoxIds[activeBoxIdCount++] = BOXTURTLE;
 #endif
+    if(feature(FEATURE_REVERSIBLE_MOTORS)) {
+        activeBoxIds[activeBoxIdCount++] = BOXREVERSEMOTOR;
+    }
 }
 
 #define IS_ENABLED(mask) ((mask) == 0 ? 0 : 1)
@@ -391,6 +395,7 @@ void packBoxModeFlags(boxBitmask_t * mspBoxModeFlags)
     CHECK_ACTIVE_BOX(IS_ENABLED(IS_RC_MODE_ACTIVE(BOXAUTOLEVEL)),       BOXAUTOLEVEL);
     CHECK_ACTIVE_BOX(IS_ENABLED(IS_RC_MODE_ACTIVE(BOXPLANWPMISSION)),   BOXPLANWPMISSION);
     CHECK_ACTIVE_BOX(IS_ENABLED(IS_RC_MODE_ACTIVE(BOXSOARING)),         BOXSOARING);
+    CHECK_ACTIVE_BOX(IS_ENABLED(IS_RC_MODE_ACTIVE(BOXREVERSEMOTOR)), BOXREVERSEMOTOR);
 
     memset(mspBoxModeFlags, 0, sizeof(boxBitmask_t));
     for (uint32_t i = 0; i < activeBoxIdCount; i++) {

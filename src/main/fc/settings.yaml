@@ -1255,6 +1255,11 @@ groups:
         field: neutral
         min: PWM_RANGE_MIN
         max: PWM_RANGE_MAX
+      - name: 3d_direction_via_reversible_motor_mode
+        description: "Use REVERSIBLE_MOTOR_MODE and not the deadband for the direction of the motor"
+        type: bool
+        default_value: false
+        field: direction_via_reversible_motor_mode
 
   - name: PG_SERVO_CONFIG
     type: servoConfig_t

@@ -118,7 +118,9 @@ throttleStatus_e FAST_CODE NOINLINE calculateThrottleStatus(throttleStatusType_e
     }
 
     const uint16_t mid_throttle_deadband = rcControlsConfig()->mid_throttle_deadband;
-    if (feature(FEATURE_REVERSIBLE_MOTORS) && (value > (PWM_RANGE_MIDDLE - mid_throttle_deadband) && value < (PWM_RANGE_MIDDLE + mid_throttle_deadband)))
+    if (feature(FEATURE_REVERSIBLE_MOTORS) && !reversibleMotorsConfig()->direction_via_reversible_motor_mode && (value > (PWM_RANGE_MIDDLE - mid_throttle_deadband) && value < (PWM_RANGE_MIDDLE + mid_throttle_deadband)))
+        return THROTTLE_LOW;
+    else if (feature(FEATURE_REVERSIBLE_MOTORS) && reversibleMotorsConfig()->direction_via_reversible_motor_mode && (value < rxConfig()->mincheck))
         return THROTTLE_LOW;
     else if (!feature(FEATURE_REVERSIBLE_MOTORS) && (value < rxConfig()->mincheck))
         return THROTTLE_LOW;

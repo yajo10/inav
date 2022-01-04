@@ -709,6 +709,14 @@ void processRx(timeUs_t currentTimeUs)
         DISABLE_FLIGHT_MODE(TURN_ASSISTANT);
     }
 
+    if(IS_RC_MODE_ACTIVE(BOXREVERSEMOTOR)) {
+        if(!FLIGHT_MODE(REVERSE_MOTORS_MODE)) {
+            ENABLE_FLIGHT_MODE(REVERSE_MOTORS_MODE);
+        }
+    }else{
+        DISABLE_FLIGHT_MODE(REVERSE_MOTORS_MODE);
+    }
+
     if (sensors(SENSOR_ACC)) {
         if (IS_RC_MODE_ACTIVE(BOXHEADINGHOLD)) {
             if (!FLIGHT_MODE(HEADING_MODE)) {
