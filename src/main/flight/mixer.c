@@ -370,6 +370,10 @@ void FAST_CODE writeMotors(void)
                         true
                     );
                 } else {
+                    /*moveForward has to be true, because of the logic of handleOutputScaling:
+                    * if the input is above stopThreshold and moving backward, the motors are stopped. We don't want this.
+                     * So if we're moving 'forwards' the motors are correctly stopped, if the throttle stick is being down
+                    */
                     motorValue = handleOutputScaling(
                         motor[i],
                         reversibleMotorsConfig()->direction_via_reversible_motor_mode ? throttleIdleValue: throttleRangeMax,
@@ -378,7 +382,7 @@ void FAST_CODE writeMotors(void)
                         throttleRangeMax,
                         DSHOT_MIN_THROTTLE,
                         DSHOT_3D_DEADBAND_LOW,
-                        false
+                        true
                     );
                 }
             }
@@ -640,7 +644,7 @@ motorStatus_e getMotorStatus(void)
     const bool fixedWingOrAirmodeNotActive = STATE(FIXED_WING_LEGACY) || !STATE(AIRMODE_ACTIVE);
     const bool throttleStickLow =
             //TODO: check this line (maybe changes needed)
-        (calculateThrottleStatus(feature(FEATURE_REVERSIBLE_MOTORS) ? THROTTLE_STATUS_TYPE_COMMAND : THROTTLE_STATUS_TYPE_RC) == THROTTLE_LOW);
+        (calculateThrottleStatus(feature(FEATURE_REVERSIBLE_MOTORS) && !reversibleMotorsConfig()->direction_via_reversible_motor_mode ? THROTTLE_STATUS_TYPE_COMMAND : THROTTLE_STATUS_TYPE_RC) == THROTTLE_LOW);
 
     if (throttleStickLow && fixedWingOrAirmodeNotActive) {
 
